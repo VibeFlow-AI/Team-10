@@ -10,10 +10,17 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sample } from "@/lib/generated/prisma";
-import { addSample, deleteSample } from "@/server/actions/sample";
+// TODO: Import Firebase actions when implemented
+// import { addSample, deleteSample } from "@/server/actions/sample";
 import { BookOpen, Plus, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
+
+// Simple Sample interface for demo purposes
+interface Sample {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export default function SampleView({
   initialSamples,
@@ -27,21 +34,16 @@ export default function SampleView({
   const handleAddSample = (formData: FormData) => {
     setError(null);
     startTransition(async () => {
-      const result = await addSample(formData);
-      if (result.error) {
-        setError(result.error);
-      } else {
-        setShowAddForm(false);
-      }
+      // TODO: Implement with Firebase
+      console.log("Add sample functionality would be implemented here");
+      setShowAddForm(false);
     });
   };
 
   const handleDeleteSample = (id: string) => {
     startTransition(async () => {
-      const result = await deleteSample(id);
-      if (result.error) {
-        setError(result.error);
-      }
+      // TODO: Implement with Firebase
+      console.log("Delete sample functionality would be implemented here");
     });
   };
 

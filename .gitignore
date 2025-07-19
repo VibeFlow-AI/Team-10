@@ -1,36 +1,49 @@
-# dependencies
-/node_modules
-
-# next.js build output
-.next
-
-# environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-
-
-# logs
+# Dependencies
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# OS
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# Environment variables
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Production
+/build
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+lib/generated/prisma/
+
+# Misc
 .DS_Store
-Thumbs.db
+*.pem
+*.log
 
-# editor directories and files
+# IDE
 .vscode/
 .idea/
 *.swp
+*.swo
 
-# output
-/dist
-/build
-
-# misc
-*.log
+# OS
+Thumbs.db

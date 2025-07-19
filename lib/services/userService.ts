@@ -1,5 +1,8 @@
 import { FirebaseService, firebaseUtils } from "../firebase-utils";
-import { User } from "../types/firebase";
+import { BaseUser, UserRole } from "../types/eduvibe";
+
+// Simple User type for general user operations
+type User = BaseUser;
 
 export class UserService extends FirebaseService<User> {
   constructor() {
@@ -20,7 +23,7 @@ export class UserService extends FirebaseService<User> {
   }
 
   // Get users by role
-  async getUsersByRole(role: "user" | "admin"): Promise<User[]> {
+  async getUsersByRole(role: UserRole): Promise<User[]> {
     try {
       return await this.query([
         firebaseUtils.where("role", firebaseUtils.operators.equal, role),
@@ -46,7 +49,7 @@ export class UserService extends FirebaseService<User> {
   }
 
   // Update user role
-  async updateUserRole(userId: string, role: "user" | "admin"): Promise<void> {
+  async updateUserRole(userId: string, role: UserRole): Promise<void> {
     try {
       await this.update(userId, { role, updatedAt: new Date() });
     } catch (error) {

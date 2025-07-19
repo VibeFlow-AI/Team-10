@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { studentService } from "@/lib/services/studentService";
 import { mentorService } from "@/lib/services/mentorService";
 import {
@@ -19,6 +19,79 @@ export default function RegisterPage() {
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  // Base64 image handling
+  const [profileImage, setProfileImage] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Convert file to base64 with compression
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage({
+          type: "error",
+          text: "Image size must be less than 5MB",
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+
+        // Compress image if it's too large
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          // Calculate new dimensions (max 500x500)
+          let { width, height } = img;
+          const maxSize = 500;
+
+          if (width > height) {
+            if (width > maxSize) {
+              height = (height * maxSize) / width;
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width = (width * maxSize) / height;
+              height = maxSize;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Convert to base64 with quality 0.8
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.8);
+          setProfileImage(compressedBase64);
+        };
+        img.src = result;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove profile image
+  const removeProfileImage = () => {
+    setProfileImage("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Get base64 size in KB
+  const getBase64Size = (base64String: string): number => {
+    const stringLength = base64String.length;
+    const sizeInBytes = 4 * Math.ceil(stringLength / 3) * 0.75;
+    return Math.round(sizeInBytes / 1024);
+  };
 
   // Student form state
   const [studentForm, setStudentForm] = useState({
@@ -113,6 +186,7 @@ export default function RegisterPage() {
         uid: `mentor_${Date.now()}`, // Mock UID
         email: mentorForm.emailAddress,
         displayName: mentorForm.fullName,
+        profilePictureUrl: profileImage || undefined,
       });
 
       setMessage({
@@ -134,6 +208,10 @@ export default function RegisterPage() {
         linkedinProfile: "",
         githubOrPortfolio: "",
       });
+      setProfileImage("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error) {
       setMessage({
         type: "error",
@@ -863,6 +941,76 @@ export default function RegisterPage() {
                   borderRadius: "4px",
                 }}
               />
+            </div>
+
+            {/* Profile Picture Upload */}
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "bold",
+                }}
+              >
+                Profile Picture (Optional)
+              </label>
+              <div
+                style={{ display: "flex", gap: "10px", alignItems: "center" }}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{
+                    padding: "8px",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                    flex: 1,
+                  }}
+                />
+                {profileImage && (
+                  <button
+                    type="button"
+                    onClick={removeProfileImage}
+                    style={{
+                      padding: "8px 12px",
+                      backgroundColor: "#dc3545",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              {profileImage && (
+                <div style={{ marginTop: "10px" }}>
+                  <img
+                    src={profileImage}
+                    alt="Profile Preview"
+                    style={{
+                      width: "100px",
+                      height: "100px",
+                      objectFit: "cover",
+                      borderRadius: "50%",
+                      border: "2px solid #ddd",
+                    }}
+                  />
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      color: "#666",
+                      marginTop: "5px",
+                    }}
+                  >
+                    Image will be stored as base64 (
+                    {getBase64Size(profileImage)} KB)
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>

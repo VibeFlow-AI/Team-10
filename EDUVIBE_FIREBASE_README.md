@@ -72,7 +72,82 @@ firestore/
 
 - **LinkedIn Profile** (URL input - mandatory)
 - **GitHub or Portfolio** (URL input - optional)
-- **Profile Picture** (image upload)
+- **Profile Picture** (image upload - base64 encoded)
+
+## 🖼️ Base64 Image Handling
+
+### Profile Picture Upload
+
+The registration form includes base64 image handling for profile pictures:
+
+#### Features:
+
+- ✅ **File Size Validation** (max 5MB)
+- ✅ **Image Compression** (max 500x500px)
+- ✅ **Quality Optimization** (JPEG 80% quality)
+- ✅ **Real-time Preview** (circular crop)
+- ✅ **Size Display** (shows KB size)
+- ✅ **Remove Functionality** (clear uploaded image)
+
+#### Implementation:
+
+```typescript
+// Convert file to base64 with compression
+const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const file = event.target.files?.[0];
+  if (file) {
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: "error", text: "Image size must be less than 5MB" });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+
+      // Compress image using Canvas API
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Resize to max 500x500
+        let { width, height } = img;
+        const maxSize = 500;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        // Convert to base64 with quality 0.8
+        const compressedBase64 = canvas.toDataURL("image/jpeg", 0.8);
+        setProfileImage(compressedBase64);
+      };
+      img.src = result;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+```
+
+#### Storage:
+
+- Images are stored as base64 strings in the `profilePictureUrl` field
+- Typical compressed size: 50-200 KB
+- Format: `data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...`
 
 ## 🔧 Services Implementation
 

@@ -139,7 +139,7 @@ export interface MentorProfile extends BaseUser {
   age: number;
   emailAddress: string;
   contactNumber: string;
-  preferredLanguage: PreferredLanguage;
+  preferredLanguage: PreferredLanguage | string;
   currentLocation: string;
   shortBio: string;
   professionalRole: string;
@@ -153,12 +153,6 @@ export interface MentorProfile extends BaseUser {
   linkedinProfile: string; // mandatory URL
   githubOrPortfolio?: string; // optional URL
   profilePictureUrl?: string; // uploaded image URL
-
-  // Additional system fields
-  isVerified: boolean;
-  isApproved: boolean;
-  rating: number;
-  totalSessions: number;
 
   // Onboarding status
   isProfileComplete: boolean;
@@ -285,7 +279,6 @@ export interface MentorSearchFilters {
   educationLevels?: MentorEducationLevel[];
   languages?: PreferredLanguage[];
   maxHourlyRate?: number;
-  minRating?: number;
   availability?: {
     dayOfWeek: number;
     timeSlot: string;

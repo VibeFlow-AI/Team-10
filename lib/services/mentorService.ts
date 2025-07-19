@@ -42,10 +42,6 @@ export class MentorService extends FirebaseService<MentorProfile> {
       | "isEmailVerified"
       | "isProfileComplete"
       | "onboardingStep"
-      | "isVerified"
-      | "isApproved"
-      | "rating"
-      | "totalSessions"
     >
   ): Promise<void> {
     try {
@@ -111,10 +107,7 @@ export class MentorService extends FirebaseService<MentorProfile> {
         isEmailVerified: false,
         isProfileComplete: true,
         onboardingStep: 3, // Completed all 3 steps
-        isVerified: false, // Requires admin verification
-        isApproved: false, // Requires admin approval
-        rating: 0,
-        totalSessions: 0,
+
         displayName: profile.fullName,
         email: profile.emailAddress,
         uid: profile.uid || "",
@@ -342,11 +335,8 @@ export class MentorService extends FirebaseService<MentorProfile> {
    */
   async getApprovedMentors(): Promise<MentorProfile[]> {
     try {
-      return await this.query([
-        firebaseUtils.where("isApproved", firebaseUtils.operators.equal, true),
-        firebaseUtils.where("isVerified", firebaseUtils.operators.equal, true),
-        firebaseUtils.orderBy("rating", "desc"),
-      ]);
+      // Since we removed approval/verification fields, return all mentors
+      return await this.getAll();
     } catch (error) {
       console.error("Error getting approved mentors:", error);
       throw error;
@@ -362,7 +352,6 @@ export class MentorService extends FirebaseService<MentorProfile> {
     subjects?: string[];
     educationLevels?: MentorEducationLevel[];
     languages?: PreferredLanguage[];
-    minRating?: number;
   }): Promise<MentorProfile[]> {
     try {
       let mentors = await this.getApprovedMentors();
@@ -386,47 +375,15 @@ export class MentorService extends FirebaseService<MentorProfile> {
 
       if (filters.languages && filters.languages.length > 0) {
         mentors = mentors.filter((mentor) =>
-          filters.languages!.includes(mentor.preferredLanguage)
+          filters.languages!.includes(mentor.preferredLanguage as PreferredLanguage)
         );
       }
 
-      if (filters.minRating) {
-        mentors = mentors.filter(
-          (mentor) => mentor.rating >= filters.minRating!
-        );
-      }
+
 
       return mentors;
     } catch (error) {
       console.error("Error searching mentors:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update mentor rating
-   * @param uid - Mentor's unique identifier
-   * @param newRating - New rating value
-   * @returns Promise<void>
-   */
-  async updateMentorRating(uid: string, newRating: number): Promise<void> {
-    try {
-      const mentor = await this.getById(uid);
-      if (!mentor) {
-        throw new Error("Mentor not found");
-      }
-
-      // Calculate new average rating
-      const totalSessions = mentor.totalSessions + 1;
-      const newAverageRating =
-        (mentor.rating * mentor.totalSessions + newRating) / totalSessions;
-
-      await this.update(uid, {
-        rating: newAverageRating,
-        totalSessions,
-      });
-    } catch (error) {
-      console.error("Error updating mentor rating:", error);
       throw error;
     }
   }

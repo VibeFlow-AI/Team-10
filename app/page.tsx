@@ -138,88 +138,26 @@ export default function HomePage() {
                 className="h-[600px] overflow-y-auto scrollbar-hide relative"
               >
                 <div className="space-y-6 py-12">
-                  {/* First set of profiles */}
-                  {/* Profile 1 - Young man with leather jacket (Large) */}
-                  <div className="w-24 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-xl">
-                    <span>👨‍🎓</span>
-                  </div>
-                  {/* Profile 2 - Young woman with sunglasses (Small) */}
-                  <div className="w-16 h-14 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-sm">
-                    <span>👩‍🎓</span>
-                  </div>
-                  {/* Profile 3 - Man with curly hair (Medium) */}
-                  <div className="w-20 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-lg">
-                    <span>👨‍💼</span>
-                  </div>
-                  {/* Profile 4 - Young woman in orange hoodie (Large) */}
-                  <div className="w-28 h-22 bg-gradient-to-br from-green-400 to-green-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-2xl">
-                    <span>👩‍💼</span>
-                  </div>
-                  {/* Profile 5 - Man with beard (Small) */}
-                  <div className="w-18 h-15 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-base">
-                    <span>🧔‍♂️</span>
-                  </div>
-                  {/* Profile 6 - Man in sports jersey (Large) */}
-                  <div className="w-26 h-20 bg-gradient-to-br from-red-400 to-red-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-xl">
-                    <span>🏃‍♂️</span>
-                  </div>
-                  {/* Profile 7 - Young woman with blonde hair (Medium) */}
-                  <div className="w-22 h-18 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-lg">
-                    <span>👱‍♀️</span>
-                  </div>
-                  {/* Profile 8 - Another young man (Small) */}
-                  <div className="w-16 h-14 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-sm">
-                    <span>👨‍🔬</span>
-                  </div>
-                  {/* Profile 9 - Woman with glasses (Large) */}
-                  <div className="w-24 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-xl">
-                    <span>👩‍🏫</span>
-                  </div>
-                  {/* Profile 10 - Man with hat (Small) */}
-                  <div className="w-18 h-15 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-base">
-                    <span>👨‍🎨</span>
+                  {/* First set of student images */}
+                  <div className="flex justify-center">
+                    <Image
+                      src="/images/students-collage.png"
+                      alt="Students collage"
+                      width={600}
+                      height={900}
+                      className="rounded-lg"
+                    />
                   </div>
                   
                   {/* Duplicate set for infinite loop effect */}
-                  {/* Profile 1 - Young man with leather jacket (Large) */}
-                  <div className="w-24 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-xl">
-                    <span>👨‍🎓</span>
-                  </div>
-                  {/* Profile 2 - Young woman with sunglasses (Small) */}
-                  <div className="w-16 h-14 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-sm">
-                    <span>👩‍🎓</span>
-                  </div>
-                  {/* Profile 3 - Man with curly hair (Medium) */}
-                  <div className="w-20 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-lg">
-                    <span>👨‍💼</span>
-                  </div>
-                  {/* Profile 4 - Young woman in orange hoodie (Large) */}
-                  <div className="w-28 h-22 bg-gradient-to-br from-green-400 to-green-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-2xl">
-                    <span>👩‍💼</span>
-                  </div>
-                  {/* Profile 5 - Man with beard (Small) */}
-                  <div className="w-18 h-15 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-base">
-                    <span>🧔‍♂️</span>
-                  </div>
-                  {/* Profile 6 - Man in sports jersey (Large) */}
-                  <div className="w-26 h-20 bg-gradient-to-br from-red-400 to-red-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-xl">
-                    <span>🏃‍♂️</span>
-                  </div>
-                  {/* Profile 7 - Young woman with blonde hair (Medium) */}
-                  <div className="w-22 h-18 bg-gradient-to-br from-pink-400 to-pink-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-lg">
-                    <span>👱‍♀️</span>
-                  </div>
-                  {/* Profile 8 - Another young man (Small) */}
-                  <div className="w-16 h-14 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-sm">
-                    <span>👨‍🔬</span>
-                  </div>
-                  {/* Profile 9 - Woman with glasses (Large) */}
-                  <div className="w-24 h-20 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-xl">
-                    <span>👩‍🏫</span>
-                  </div>
-                  {/* Profile 10 - Man with hat (Small) */}
-                  <div className="w-18 h-15 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full mx-auto flex items-center justify-center text-white font-semibold text-base">
-                    <span>👨‍🎨</span>
+                  <div className="flex justify-center">
+                    <Image
+                      src="/images/students-collage.png"
+                      alt="Students collage"
+                      width={600}
+                      height={900}
+                      className="rounded-lg"
+                    />
                   </div>
                 </div>
               </div>

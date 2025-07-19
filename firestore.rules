@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function hasRole(role) {
+      return request.auth.token.role == role;
+    }
+    
+    function isAdmin() {
+      return hasRole('admin');
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+    
+    // Public collections (readable by all authenticated users)
+    match /public/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isAdmin();
+    }
+    
+    // Private collections (only accessible by owners or admins)
+    match /private/{document=**} {
+      allow read, write: if isAuthenticated() && isAdmin();
+    }
+    
+    // Default rule - deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 

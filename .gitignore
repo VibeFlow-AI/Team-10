@@ -11,14 +11,7 @@
 .env.test.local
 .env.production.local
 
-# prisma
-/prisma/dev.db
-/prisma/dev.db-journal
-/prisma/*.sqlite
-/prisma/*.sqlite-journal
-/prisma/lib/
-prisma/lib/
-lib/generated/prisma/
+
 
 # logs
 npm-debug.log*

@@ -344,6 +344,39 @@ export class MentorService extends FirebaseService<MentorProfile> {
   }
 
   /**
+   * Update mentor rating
+   * @param mentorId - Mentor ID
+   * @param rating - New rating (1-5)
+   * @returns Promise<void>
+   */
+  async updateMentorRating(mentorId: string, rating: number): Promise<void> {
+    try {
+      if (rating < 1 || rating > 5) {
+        throw new Error("Rating must be between 1 and 5");
+      }
+
+      const mentor = await this.getById(mentorId);
+      if (!mentor) {
+        throw new Error("Mentor not found");
+      }
+
+      // Calculate new average rating
+      const currentRating = mentor.averageRating || 0;
+      const totalRatings = mentor.totalRatings || 0;
+      const newTotalRatings = totalRatings + 1;
+      const newAverageRating = (currentRating * totalRatings + rating) / newTotalRatings;
+
+      await this.update(mentorId, {
+        averageRating: newAverageRating,
+        totalRatings: newTotalRatings,
+      });
+    } catch (error) {
+      console.error("Error updating mentor rating:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Search mentors with filters
    * @param filters - Search filters
    * @returns Promise<MentorProfile[]>

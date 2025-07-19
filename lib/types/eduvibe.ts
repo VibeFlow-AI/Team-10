@@ -154,6 +154,10 @@ export interface MentorProfile extends BaseUser {
   githubOrPortfolio?: string; // optional URL
   profilePictureUrl?: string; // uploaded image URL
 
+  // Rating and feedback
+  averageRating?: number;
+  totalRatings?: number;
+
   // Onboarding status
   isProfileComplete: boolean;
   onboardingStep: number;

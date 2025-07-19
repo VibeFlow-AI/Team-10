@@ -3,25 +3,141 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X } from "lucide-react";
+import { AuthService } from "@/lib/auth";
+import { userService } from "@/lib/services/userService";
+import { UserRole } from "@/lib/types/eduvibe";
+import { useUser } from "@/context/UserContext";
 
 interface GetStartedModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function GetStartedModal({ isOpen, onClose }: GetStartedModalProps) {
+export default function GetStartedModal({
+  isOpen,
+  onClose,
+}: GetStartedModalProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { setUserProfile } = useUser();
 
-  const handleContinue = () => {
-    if (email.trim()) {
-      setShowRoleSelection(true);
+  const handleContinue = async () => {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    // Basic email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setError("Email and password are required.");
+      return;
     }
+    if (!emailRegex.test(trimmedEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (trimmedPassword.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setError(null);
+    setLoading(true);
+
+    try {
+      let user = null;
+      try {
+        // Try to log in
+        user = await AuthService.signInWithEmail(trimmedEmail, trimmedPassword);
+        console.log("User logged in:", user);
+      } catch (loginErr) {
+        // Only try to register if the error is user-not-found
+        if (
+          loginErr &&
+          typeof loginErr === "object" &&
+          "code" in loginErr &&
+          loginErr.code === "auth/user-not-found"
+        ) {
+          try {
+            user = await AuthService.signUpWithEmail(
+              trimmedEmail,
+              trimmedPassword
+            );
+          } catch (signupErr) {
+            setError("Registration failed. Please try again.");
+            setLoading(false);
+            return;
+          }
+        } else if (
+          loginErr &&
+          typeof loginErr === "object" &&
+          "code" in loginErr &&
+          loginErr.code === "auth/wrong-password"
+        ) {
+          setError("Incorrect password. Please try again.");
+          setLoading(false);
+          return;
+        } else if (
+          loginErr &&
+          typeof loginErr === "object" &&
+          "code" in loginErr &&
+          loginErr.code === "auth/invalid-email"
+        ) {
+          setError("Invalid email address.");
+          setLoading(false);
+          return;
+        } else {
+          setError("Sign in failed. Please try again.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 3. Check if user exists in User collection
+      const userProfile = await userService.getUserByEmail(user.email);
+      if (userProfile) {
+        setUserProfile(userProfile);
+        // 4. If user exists and onboarding not complete, redirect to correct registration page
+        if (!userProfile.isProfileComplete) {
+          if (userProfile.role === UserRole.MENTOR) {
+            router.push("/register/mentor");
+          } else if (userProfile.role === UserRole.STUDENT) {
+            router.push("/register/student");
+          }
+          setLoading(false);
+          return;
+        } else {
+          // If profile complete, go to dashboard
+          if (userProfile.role === UserRole.MENTOR) {
+            router.push("/dashboard/mentor");
+          } else if (userProfile.role === UserRole.STUDENT) {
+            router.push("/dashboard/student");
+          }
+          setLoading(false);
+          return;
+        }
+      } else {
+        // If user not in User collection, show role selection
+        setShowRoleSelection(true);
+      }
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    }
+    setLoading(false);
   };
 
   const handleBackToSignIn = () => {
@@ -81,25 +197,25 @@ export default function GetStartedModal({ isOpen, onClose }: GetStartedModalProp
               <CardContent className="space-y-6">
                 {/* Social Login Buttons */}
                 <div className="flex gap-3">
-                  <Button 
+                  <Button
                     onClick={handleGoogleSignIn}
-                    variant="outline" 
+                    variant="outline"
                     className="flex-1 bg-black text-white hover:bg-gray-800 border-black"
                     size="lg"
                   >
                     <span className="text-white font-bold">G</span>
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleFacebookSignIn}
-                    variant="outline" 
+                    variant="outline"
                     className="flex-1 bg-black text-white hover:bg-gray-800 border-black"
                     size="lg"
                   >
                     <span className="text-white font-bold">f</span>
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleGitHubSignIn}
-                    variant="outline" 
+                    variant="outline"
                     className="flex-1 bg-black text-white hover:bg-gray-800 border-black"
                     size="lg"
                   >
@@ -131,16 +247,32 @@ export default function GetStartedModal({ isOpen, onClose }: GetStartedModalProp
                     className="w-full border-gray-300 focus:border-black focus:ring-black"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    Password
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full border-gray-300 focus:border-black focus:ring-black"
+                  />
+                </div>
 
                 {/* Continue Button */}
-                <Button 
-                  onClick={handleContinue} 
+                <Button
+                  onClick={handleContinue}
                   className="w-full bg-black text-white hover:bg-gray-800"
                   size="lg"
-                  disabled={!email.trim()}
+                  disabled={!email.trim() || loading}
                 >
-                  Continue
+                  {loading ? "Signing In..." : "Continue"}
                 </Button>
+                {error && (
+                  <p className="text-red-500 text-sm text-center">{error}</p>
+                )}
               </CardContent>
             </>
           ) : (
@@ -154,23 +286,23 @@ export default function GetStartedModal({ isOpen, onClose }: GetStartedModalProp
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button 
-                  onClick={handleContinueAsMentor} 
+                <Button
+                  onClick={handleContinueAsMentor}
                   className="w-full bg-black text-white hover:bg-gray-800 h-16 text-lg"
                   size="lg"
                 >
                   Continue as Mentor
                 </Button>
-                <Button 
-                  onClick={handleContinueAsStudent} 
+                <Button
+                  onClick={handleContinueAsStudent}
                   className="w-full bg-black text-white hover:bg-gray-800 h-16 text-lg"
                   size="lg"
                 >
                   Continue as Student
                 </Button>
-                <Button 
-                  onClick={handleBackToSignIn} 
-                  variant="outline" 
+                <Button
+                  onClick={handleBackToSignIn}
+                  variant="outline"
                   className="w-full"
                   size="lg"
                 >
@@ -183,4 +315,4 @@ export default function GetStartedModal({ isOpen, onClose }: GetStartedModalProp
       </div>
     </div>
   );
-} 
+}

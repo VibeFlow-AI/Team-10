@@ -9,52 +9,78 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MentorCard } from "@/components/MentorCard";
 import { BookingCard } from "@/components/BookingCard";
 import { BookingModal } from "@/components/BookingModal";
+import { useAuth } from "@/lib/auth";
+import { studentService } from "@/lib/services/studentService";
+import { mentorService } from "@/lib/services/mentorService";
+import { MentorProfile, StudentProfile } from "@/lib/types/eduvibe";
 import { mentors, mockStudent, matchMentorsToStudent, Mentor } from "@/lib/mentor-data";
 import { Search, Filter, BookOpen, Calendar } from "lucide-react";
 import Link from "next/link";
+import { firebaseUtils } from "@/lib/firebase-utils";
 
 export default function StudentDashboardPage() {
+  const { user, loading: authLoading } = useAuth();
+  const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
+  const [mentors, setMentors] = useState<MentorProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("explore");
   const [searchQuery, setSearchQuery] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("all");
-  const [matchedMentors, setMatchedMentors] = useState<Mentor[]>([]);
-  const [filteredMentors, setFilteredMentors] = useState<Mentor[]>([]);
+  const [filteredMentors, setFilteredMentors] = useState<MentorProfile[]>([]);
   const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [bookings, setBookings] = useState<any[]>([]);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  // Initialize matched mentors on component mount
+  // Fetch student profile and recommended mentors
   useEffect(() => {
-    const matched = matchMentorsToStudent(mockStudent, mentors);
-    setMatchedMentors(matched);
-    setFilteredMentors(matched);
-  }, []);
+    const fetchData = async () => {
+      if (!user) return;
+      setLoading(true);
+      setError(null);
+      try {
+        // 1. Fetch student profile from Firestore by uid field (not document ID)
+        const students = await studentService.query([
+          firebaseUtils.where('uid', firebaseUtils.operators.equal, user.uid)
+        ]);
+        const profile = students[0] || null;
+        if (!profile) throw new Error("Student profile not found.");
+        setStudentProfile(profile);
+        // 2. Fetch recommended mentors
+        const recMentors = await mentorService.getMentorsMatchingStudentPreferences(profile);
+        setMentors(recMentors);
+      } catch (err: any) {
+        setError(err.message || "Failed to load dashboard data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (!authLoading) fetchData();
+  }, [user, authLoading]);
 
   // Filter mentors based on search and subject filter
   useEffect(() => {
-    let filtered = matchedMentors;
+    let filtered = mentors;
 
     if (searchQuery) {
       filtered = filtered.filter(mentor =>
-        mentor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        mentor.subjects.some(subject => 
+        mentor.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        mentor.teachingSubjects.some(subject => 
           subject.toLowerCase().includes(searchQuery.toLowerCase())
         ) ||
-        mentor.expertise.some(skill => 
-          skill.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        (mentor.professionalRole && mentor.professionalRole.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
     if (subjectFilter && subjectFilter !== "all") {
       filtered = filtered.filter(mentor =>
-        mentor.subjects.includes(subjectFilter)
+        mentor.teachingSubjects.includes(subjectFilter)
       );
     }
 
     setFilteredMentors(filtered);
-  }, [searchQuery, subjectFilter, matchedMentors]);
+  }, [searchQuery, subjectFilter, mentors]);
 
   const handleBookNow = (mentor: Mentor) => {
     setSelectedMentor(mentor);
@@ -72,7 +98,34 @@ export default function StudentDashboardPage() {
     setSelectedMentor(null);
   };
 
-  const allSubjects = Array.from(new Set(mentors.flatMap(m => m.subjects))).sort();
+  // Get all unique subjects from mentors
+  const allSubjects = Array.from(new Set(mentors.flatMap(m => m.teachingSubjects))).sort();
+
+  // Helper to adapt MentorProfile to MentorCard props
+  const mapMentorProfileToCard = (mentor: MentorProfile) => ({
+    id: mentor.uid,
+    name: mentor.fullName,
+    photo: mentor.profilePictureUrl || "/public/default-profile.png",
+    rating: mentor.averageRating || 5,
+    experience: mentor.teachingExperience || "N/A",
+    subjects: mentor.teachingSubjects,
+    expertise: [mentor.professionalRole, mentor.shortBio].filter(Boolean),
+    hourlyRate: 25, // Placeholder, replace with real data if available
+    // Add missing fields for Mentor type compatibility
+    languages: [mentor.preferredLanguage],
+    gradeLevels: mentor.preferredStudentLevels || [],
+    bio: mentor.shortBio || "",
+  });
+
+  if (authLoading || loading) {
+    return <div className="flex justify-center items-center min-h-screen">Loading dashboard...</div>;
+  }
+  if (error) {
+    return <div className="flex justify-center items-center min-h-screen text-red-600">{error}</div>;
+  }
+  if (!studentProfile) {
+    return <div className="flex justify-center items-center min-h-screen">No student profile found.</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -93,7 +146,7 @@ export default function StudentDashboardPage() {
             Student Dashboard
           </h1>
           <p className="text-lg text-gray-600">
-            Welcome back, {mockStudent.name}! Discover mentors and manage your sessions.
+            Welcome back, {studentProfile.fullName}! Discover mentors and manage your sessions.
           </p>
         </div>
 
@@ -157,7 +210,7 @@ export default function StudentDashboardPage() {
                 
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-gray-600">
-                    Showing {filteredMentors.length} of {matchedMentors.length} mentors
+                    Showing {filteredMentors.length} of {mentors.length} mentors
                   </p>
                   <Button
                     variant="outline"
@@ -177,8 +230,8 @@ export default function StudentDashboardPage() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredMentors.map((mentor) => (
                   <MentorCard
-                    key={mentor.id}
-                    mentor={mentor}
+                    key={mentor.uid}
+                    mentor={mapMentorProfileToCard(mentor)}
                     onBookNow={handleBookNow}
                   />
                 ))}

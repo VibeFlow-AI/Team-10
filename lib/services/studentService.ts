@@ -177,10 +177,16 @@ export class StudentService extends FirebaseService<StudentProfile> {
         throw new Error("Mentor is not available at the selected time");
       }
 
-      // Get student and mentor profiles
-      const student = await this.getById(studentId);
+      // Get student and mentor profiles by uid field
+      const students = await this.query([
+        firebaseUtils.where('uid', firebaseUtils.operators.equal, studentId)
+      ]);
+      const student = students[0] || null;
       const mentorService = new MentorService();
-      const mentor = await mentorService.getById(mentorId);
+      const mentors = await mentorService.query([
+        firebaseUtils.where('uid', firebaseUtils.operators.equal, mentorId)
+      ]);
+      const mentor = mentors[0] || null;
 
       if (!student || !mentor) {
         throw new Error("Student or mentor profile not found");

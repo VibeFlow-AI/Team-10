@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { createStudentProfile } from "@/server/actions/sample";
+import { AuthService } from "@/lib/auth";
 
 interface StudentFormData {
   // Step 1: Basic Info
@@ -26,6 +28,7 @@ interface StudentFormData {
   learningStyle: string;
   learningDisabilities: string;
   learningDisabilitiesDescription: string;
+  password: string; // Add password field
 }
 
 export default function StudentRegisterPage() {
@@ -44,7 +47,11 @@ export default function StudentRegisterPage() {
     learningStyle: "",
     learningDisabilities: "",
     learningDisabilitiesDescription: "",
+    password: "", // Add password field
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -78,11 +85,35 @@ export default function StudentRegisterPage() {
     }
   };
 
-  const handleSubmit = () => {
-    // Clear localStorage after successful submission
-    localStorage.removeItem("studentOnboardingData");
-    // Navigate to student dashboard
-    router.push("/dashboard/student");
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+    try {
+      // 1. Create user in Firebase Auth
+      const user = await AuthService.signUpWithEmail(formData.email, formData.password, formData.fullName);
+      if (!user || !user.uid) {
+        throw new Error("Failed to create user account.");
+      }
+      // 2. Create student profile in Firestore with uid
+      const form = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key !== "password") form.append(key, value); // Don't send password to backend
+      });
+      form.append("uid", user.uid);
+      const result = await createStudentProfile(form);
+      if (result && result.success) {
+        setSuccess(true);
+        localStorage.removeItem("studentOnboardingData");
+        router.push("/dashboard/student");
+      } else {
+        setError(result?.error || "Registration failed. Please try again.");
+      }
+    } catch (err: any) {
+      setError(err.message || "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isStepValid = () => {
@@ -146,6 +177,17 @@ export default function StudentRegisterPage() {
           value={formData.contactNumber}
           onChange={(e) => handleInputChange("contactNumber", e.target.value)}
           placeholder="Enter your contact number"
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="password">Password *</Label>
+        <Input
+          id="password"
+          type="password"
+          value={formData.password}
+          onChange={(e) => handleInputChange("password", e.target.value)}
+          placeholder="Enter a password"
           required
         />
       </div>
@@ -336,7 +378,8 @@ export default function StudentRegisterPage() {
 
             <form onSubmit={(e) => e.preventDefault()}>
               {renderCurrentStep()}
-
+              {error && <div className="text-red-600 mt-4 text-center">{error}</div>}
+              {success && <div className="text-green-600 mt-4 text-center">Registration successful!</div>}
               <div className="flex justify-between mt-8">
                 <Button
                   type="button"
@@ -359,9 +402,9 @@ export default function StudentRegisterPage() {
                   <Button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={!isStepValid()}
+                    disabled={!isStepValid() || loading}
                   >
-                    Complete Registration
+                    {loading ? "Registering..." : "Complete Registration"}
                   </Button>
                 )}
               </div>

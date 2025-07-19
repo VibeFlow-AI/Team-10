@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { X } from "lucide-react";
 
 interface GetStartedModalProps {
   isOpen: boolean;
@@ -56,7 +57,16 @@ export default function GetStartedModal({ isOpen, onClose }: GetStartedModalProp
 
   return (
     <div className="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-lg">
+      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-lg relative">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Close modal"
+        >
+          <X className="w-5 h-5 text-gray-500" />
+        </button>
+        
         <Card className="border-0 shadow-none">
           {!showRoleSelection ? (
             <>

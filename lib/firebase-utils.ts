@@ -19,6 +19,7 @@ import {
   runTransaction,
   QuerySnapshot,
   DocumentSnapshot,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -39,6 +40,24 @@ export class FirebaseService<T extends DocumentData> {
       return docRef.id;
     } catch (error) {
       console.error(`Error creating ${this.collectionName}:`, error);
+      throw error;
+    }
+  }
+
+  // Create a new document with a specified ID
+  async createWithId(
+    id: string,
+    data: Omit<T, "id" | "createdAt" | "updatedAt">
+  ): Promise<void> {
+    try {
+      const docRef = doc(db, this.collectionName, id);
+      await setDoc(docRef, {
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    } catch (error) {
+      console.error(`Error creating ${this.collectionName} with ID:`, error);
       throw error;
     }
   }

@@ -95,6 +95,9 @@ export interface BaseUser {
   updatedAt: Date;
   isEmailVerified: boolean;
   lastSignInAt?: Date;
+  // Onboarding status
+  isProfileComplete: boolean;
+  onboardingStep: number;
 }
 
 // Student subject skill level interface
@@ -124,10 +127,6 @@ export interface StudentProfile extends BaseUser {
   preferredLearningStyle: LearningStyle;
   hasLearningDisabilities: boolean;
   learningDisabilitiesDescription?: string;
-
-  // Onboarding status
-  isProfileComplete: boolean;
-  onboardingStep: number;
 }
 
 // Mentor profile interface - matches the exact form requirements
@@ -157,10 +156,6 @@ export interface MentorProfile extends BaseUser {
   // Rating and feedback
   averageRating?: number;
   totalRatings?: number;
-
-  // Onboarding status
-  isProfileComplete: boolean;
-  onboardingStep: number;
 }
 
 // Time slot interface

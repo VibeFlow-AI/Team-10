@@ -3,10 +3,18 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { auth, db } from "@/lib/firebase";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 
 interface MentorFormData {
   // Step 1: Personal Information
@@ -18,12 +26,12 @@ interface MentorFormData {
   currentLocation: string;
   shortBio: string;
   professionalRole: string;
-  
+
   // Step 2: Expertise
   subjectsToTeach: string;
   experience: string;
   preferredStudentLevels: string[];
-  
+
   // Step 3: Links & Profile
   linkedinProfile: string;
   githubPortfolio: string;
@@ -33,6 +41,9 @@ interface MentorFormData {
 export default function MentorRegisterPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState<MentorFormData>({
     fullName: "",
     age: "",
@@ -58,7 +69,7 @@ export default function MentorRegisterPage() {
       // File objects can't be serialized, so we need to handle this
       setFormData({
         ...parsed,
-        profilePicture: null // Reset file input on reload
+        profilePicture: null, // Reset file input on reload
       });
     }
   }, []);
@@ -67,24 +78,27 @@ export default function MentorRegisterPage() {
   useEffect(() => {
     const dataToSave = {
       ...formData,
-      profilePicture: null // Don't save file object
+      profilePicture: null, // Don't save file object
     };
     localStorage.setItem("mentorOnboardingData", JSON.stringify(dataToSave));
   }, [formData]);
 
-  const handleInputChange = (field: keyof MentorFormData, value: string | string[] | File | null) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    field: keyof MentorFormData,
+    value: string | string[] | File | null
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleCheckboxChange = (level: string, checked: boolean) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       preferredStudentLevels: checked
         ? [...prev.preferredStudentLevels, level]
-        : prev.preferredStudentLevels.filter(l => l !== level)
+        : prev.preferredStudentLevels.filter((l) => l !== level),
     }));
   };
 
@@ -100,20 +114,81 @@ export default function MentorRegisterPage() {
     }
   };
 
-  const handleSubmit = () => {
-    // Clear localStorage after successful submission
-    localStorage.removeItem("mentorOnboardingData");
-    // Navigate to mentor dashboard
-    router.push("/dashboard/mentor");
+  const handleSubmit = async () => {
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        setError("You must be logged in to register as a mentor.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if mentor already exists
+      const mentorDoc = doc(db, "mentors", user.uid);
+      const mentorSnap = await getDoc(mentorDoc);
+      if (mentorSnap.exists()) {
+        setError("Mentor already registered.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate LinkedIn URL (client-side)
+      const linkedInRegex =
+        /^https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-]+\/?$/;
+      if (!linkedInRegex.test(formData.linkedinProfile)) {
+        setError("Please enter a valid LinkedIn profile URL.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Prepare mentor profile data
+      const mentorProfile = {
+        ...formData,
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || formData.fullName,
+        role: "mentor",
+        isEmailVerified: user.emailVerified,
+        isProfileComplete: true,
+        onboardingStep: 3,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      // Write to Firestore
+      await setDoc(mentorDoc, mentorProfile);
+
+      localStorage.removeItem("mentorOnboardingData");
+      setSuccess("Registration successful!");
+      router.push("/dashboard/mentor");
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    }
+    setIsLoading(false);
   };
 
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.fullName && formData.age && formData.email && formData.contactNumber && 
-               formData.preferredLanguage && formData.currentLocation && formData.shortBio && formData.professionalRole;
+        return (
+          formData.fullName &&
+          formData.age &&
+          formData.email &&
+          formData.contactNumber &&
+          formData.preferredLanguage &&
+          formData.currentLocation &&
+          formData.shortBio &&
+          formData.professionalRole
+        );
       case 2:
-        return formData.subjectsToTeach && formData.experience && formData.preferredStudentLevels.length > 0;
+        return (
+          formData.subjectsToTeach &&
+          formData.experience &&
+          formData.preferredStudentLevels.length > 0
+        );
       case 3:
         return formData.linkedinProfile;
       default:
@@ -134,7 +209,7 @@ export default function MentorRegisterPage() {
           required
         />
       </div>
-      
+
       <div>
         <Label htmlFor="age">Age *</Label>
         <Input
@@ -148,7 +223,7 @@ export default function MentorRegisterPage() {
           required
         />
       </div>
-      
+
       <div>
         <Label htmlFor="email">Email *</Label>
         <Input
@@ -160,7 +235,7 @@ export default function MentorRegisterPage() {
           required
         />
       </div>
-      
+
       <div>
         <Label htmlFor="contactNumber">Contact Number *</Label>
         <Input
@@ -172,13 +247,15 @@ export default function MentorRegisterPage() {
           required
         />
       </div>
-      
+
       <div>
         <Label htmlFor="preferredLanguage">Preferred Language *</Label>
         <select
           id="preferredLanguage"
           value={formData.preferredLanguage}
-          onChange={(e) => handleInputChange("preferredLanguage", e.target.value)}
+          onChange={(e) =>
+            handleInputChange("preferredLanguage", e.target.value)
+          }
           className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
         >
@@ -189,7 +266,7 @@ export default function MentorRegisterPage() {
           <option value="Other">Other</option>
         </select>
       </div>
-      
+
       <div>
         <Label htmlFor="currentLocation">Current Location *</Label>
         <Input
@@ -201,7 +278,7 @@ export default function MentorRegisterPage() {
           required
         />
       </div>
-      
+
       <div>
         <Label htmlFor="shortBio">Short Bio *</Label>
         <Textarea
@@ -213,14 +290,16 @@ export default function MentorRegisterPage() {
           required
         />
       </div>
-      
+
       <div>
         <Label htmlFor="professionalRole">Professional Role *</Label>
         <Input
           id="professionalRole"
           type="text"
           value={formData.professionalRole}
-          onChange={(e) => handleInputChange("professionalRole", e.target.value)}
+          onChange={(e) =>
+            handleInputChange("professionalRole", e.target.value)
+          }
           placeholder="e.g., Software Engineer, Teacher, Consultant"
           required
         />
@@ -241,7 +320,7 @@ export default function MentorRegisterPage() {
           required
         />
       </div>
-      
+
       <div>
         <Label htmlFor="experience">Experience *</Label>
         <select
@@ -258,7 +337,7 @@ export default function MentorRegisterPage() {
           <option value="5+ years">5+ years</option>
         </select>
       </div>
-      
+
       <div>
         <Label>Preferred Student Levels *</Label>
         <div className="space-y-2">
@@ -291,7 +370,7 @@ export default function MentorRegisterPage() {
           required
         />
       </div>
-      
+
       <div>
         <Label htmlFor="githubPortfolio">GitHub or Portfolio (Optional)</Label>
         <Input
@@ -302,14 +381,16 @@ export default function MentorRegisterPage() {
           placeholder="https://github.com/your-username or portfolio URL"
         />
       </div>
-      
+
       <div>
         <Label htmlFor="profilePicture">Profile Picture</Label>
         <Input
           id="profilePicture"
           type="file"
           accept="image/*"
-          onChange={(e) => handleInputChange("profilePicture", e.target.files?.[0] || null)}
+          onChange={(e) =>
+            handleInputChange("profilePicture", e.target.files?.[0] || null)
+          }
           className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p className="text-sm text-gray-500 mt-1">
@@ -376,7 +457,7 @@ export default function MentorRegisterPage() {
                 >
                   Previous
                 </Button>
-                
+
                 {currentStep < 3 ? (
                   <Button
                     type="button"
@@ -389,16 +470,22 @@ export default function MentorRegisterPage() {
                   <Button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={!isStepValid()}
+                    disabled={!isStepValid() || isLoading}
                   >
-                    Complete Registration
+                    {isLoading ? "Registering..." : "Complete Registration"}
                   </Button>
                 )}
               </div>
+              {error && (
+                <p className="text-red-500 text-center mt-4">{error}</p>
+              )}
+              {success && (
+                <p className="text-green-600 text-center mt-4">{success}</p>
+              )}
             </form>
           </CardContent>
         </Card>
       </div>
     </div>
   );
-} 
+}

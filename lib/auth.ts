@@ -114,8 +114,6 @@ export class AuthService {
     }
   }
 
-
-
   static async signInWithGithub(): Promise<User> {
     try {
       const provider = new GithubAuthProvider();
@@ -137,23 +135,3 @@ export class AuthService {
     return onAuthStateChanged(auth, callback);
   }
 }
-
-// Custom hook for authentication state (for React components)
-export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = AuthService.onAuthStateChange((user) => {
-      setUser(user);
-      setLoading(false);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  return { user, loading };
-};
-
-// Import React hooks for the custom hook
-import { useState, useEffect } from "react";

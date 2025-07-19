@@ -14,7 +14,9 @@ import {
   PreferredLanguage,
   SessionStatus,
   PaymentStatus,
+  UserRole,
 } from "../types/eduvibe";
+import { SessionService } from "./sessionService";
 
 /**
  * Mentor Service - Handles all mentor-related operations
@@ -105,7 +107,7 @@ export class MentorService extends FirebaseService<MentorProfile> {
         "id" | "createdAt" | "updatedAt"
       > = {
         ...profile,
-        role: "mentor" as const,
+        role: UserRole.MENTOR,
         isEmailVerified: false,
         isProfileComplete: true,
         onboardingStep: 3, // Completed all 3 steps
@@ -590,9 +592,6 @@ export class MentorService extends FirebaseService<MentorProfile> {
       .slice(0, 5);
   }
 }
-
-// Import required services
-import { SessionService } from "./sessionService";
 
 // Export singleton instance
 export const mentorService = new MentorService();

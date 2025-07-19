@@ -14,7 +14,10 @@ import {
   StudentEducationLevel,
   SessionStatus,
   PaymentStatus,
+  UserRole,
 } from "../types/eduvibe";
+import { MentorService } from "./mentorService";
+import { SessionService } from "./sessionService";
 
 /**
  * Student Service - Handles all student-related operations
@@ -85,7 +88,7 @@ export class StudentService extends FirebaseService<StudentProfile> {
         "id" | "createdAt" | "updatedAt"
       > = {
         ...profile,
-        role: "student" as const,
+        role: UserRole.STUDENT,
         isEmailVerified: false,
         isProfileComplete: true,
         onboardingStep: 3, // Completed all 3 steps
@@ -483,10 +486,6 @@ export class StudentService extends FirebaseService<StudentProfile> {
     }));
   }
 }
-
-// Import required services
-import { MentorService } from "./mentorService";
-import { SessionService } from "./sessionService";
 
 // Export singleton instance
 export const studentService = new StudentService();
